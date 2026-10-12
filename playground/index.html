@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A no-setup interactive guide to task planning, dependencies, and parallel execution in LLMCompiler.">
+  <title>LLMCompiler Playground — learn by playing</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #202b3c;
+      --muted: #5d6b7e;
+      --paper: #f5f7fb;
+      --card: #fff;
+      --line: #dce3ed;
+      --blue: #3a5ccc;
+      --blue-soft: #edf1ff;
+      --teal: #168b81;
+      --teal-soft: #e5f6f3;
+      --orange: #b86a15;
+      --orange-soft: #fff2df;
+      --red: #b64c4c;
+      --red-soft: #fff0ef;
+      --shadow: 0 12px 34px rgb(32 43 60 / 7%);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse at 9% 3%, rgb(226 235 255 / 72%), transparent 27rem),
+        var(--paper);
+      line-height: 1.55;
+    }
+
+    a { color: var(--blue); }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+
+    .page-shell { width: min(1160px, calc(100% - 36px)); margin: 0 auto; }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 22px 0;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+    .brand { color: var(--ink); font-weight: 760; letter-spacing: -.02em; }
+    .topbar a { text-decoration: none; }
+    .topbar a:hover { text-decoration: underline; }
+
+    .hero { padding: 44px 0 28px; }
+    .eyebrow {
+      color: var(--blue);
+      font-size: .76rem;
+      font-weight: 780;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 {
+      max-width: 780px;
+      margin: 12px 0 14px;
+      font-size: clamp(2.25rem, 6vw, 4.1rem);
+      line-height: 1.04;
+      letter-spacing: -.055em;
+    }
+    .hero-copy { max-width: 730px; color: var(--muted); font-size: 1.15rem; }
+    .hero-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin-top: 6px;
+      padding: 9px 13px;
+      border: 1px solid #d5def5;
+      border-radius: 99px;
+      color: #405276;
+      background: rgb(255 255 255 / 76%);
+      font-size: .88rem;
+    }
+    .hero-note::before {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--teal);
+      content: "";
+    }
+
+    .mental-model {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 24px 0 52px;
+    }
+    .model-card {
+      position: relative;
+      min-height: 146px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgb(255 255 255 / 84%);
+      box-shadow: var(--shadow);
+    }
+    .model-card:not(:last-child)::after {
+      position: absolute;
+      z-index: 2;
+      top: 50%;
+      right: -17px;
+      width: 21px;
+      height: 21px;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      color: var(--blue);
+      background: white;
+      content: "→";
+      font-size: 14px;
+      line-height: 19px;
+      text-align: center;
+    }
+    .model-label { color: var(--blue); font-size: .76rem; font-weight: 760; text-transform: uppercase; }
+    .model-card h2 { margin: 8px 0 6px; font-size: 1.1rem; }
+    .model-card p { margin: 0; color: var(--muted); font-size: .92rem; }
+
+    .section-heading { margin-bottom: 18px; }
+    .section-heading h2 { margin: 5px 0; font-size: clamp(1.6rem, 3vw, 2.25rem); letter-spacing: -.035em; }
+    .section-heading p { margin-bottom: 0; color: var(--muted); }
+    .playground { padding: 30px; border: 1px solid var(--line); border-radius: 22px; background: var(--card); box-shadow: var(--shadow); }
+    .practice-note {
+      display: flex;
+      gap: 12px;
+      margin: 20px 0 24px;
+      padding: 14px 16px;
+      border-left: 4px solid var(--teal);
+      border-radius: 7px;
+      background: var(--teal-soft);
+      color: #2d5551;
+    }
+    .practice-note strong { color: #204a46; }
+    .practice-note p { margin: 2px 0 0; }
+    .bulb { font-size: 1.2rem; }
+
+    .preset-bar { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 18px; }
+    .button {
+      min-height: 40px;
+      padding: 9px 14px;
+      border: 1px solid #cbd5e4;
+      border-radius: 9px;
+      color: #324156;
+      background: white;
+      font-size: .9rem;
+      font-weight: 670;
+      transition: border-color .15s ease, background .15s ease, transform .15s ease;
+    }
+    .button:hover { border-color: var(--blue); }
+    .button.primary { border-color: var(--blue); color: white; background: var(--blue); }
+    .button.primary:hover { background: #2e4fb5; }
+    .button:disabled { cursor: wait; opacity: .7; }
+    .button:focus-visible, input:focus-visible { outline: 3px solid #93a9ff; outline-offset: 2px; }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .panel { min-width: 0; border: 1px solid var(--line); border-radius: 15px; background: white; }
+    .panel-heading { padding: 17px 18px 12px; }
+    .panel-heading h3 { margin: 0; font-size: 1.06rem; }
+    .panel-heading p { margin: 4px 0 0; color: var(--muted); font-size: .86rem; }
+    .task-editor { display: grid; gap: 10px; padding: 0 12px 14px; }
+    .task-card { padding: 13px; border: 1px solid var(--line); border-radius: 11px; background: #fcfdff; }
+    .task-top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+    .task-title { display: flex; gap: 9px; align-items: baseline; }
+    .task-id {
+      display: inline-flex;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      width: 27px;
+      height: 27px;
+      border-radius: 8px;
+      color: #324eaf;
+      background: var(--blue-soft);
+      font-size: .78rem;
+      font-weight: 790;
+    }
+    .task-title strong { font-size: .92rem; }
+    .duration-control { min-width: 116px; color: var(--muted); font-size: .76rem; text-align: right; }
+    .duration-control output { color: var(--ink); font-weight: 720; }
+    .duration-control input { display: block; width: 116px; height: 20px; margin: 3px 0 0 auto; accent-color: var(--blue); }
+    .task-description { margin: 7px 0 10px 36px; color: var(--muted); font-size: .82rem; }
+    .dependency-options { display: flex; flex-wrap: wrap; gap: 7px; margin-left: 36px; }
+    .dependency-options legend { width: 100%; margin-bottom: 4px; color: var(--muted); font-size: .76rem; }
+    .dependency-options { padding: 0; border: 0; }
+    .dep-choice {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 8px;
+      border: 1px solid var(--line);
+      border-radius: 99px;
+      color: #47556a;
+      background: white;
+      font-size: .76rem;
+      cursor: pointer;
+    }
+    .dep-choice:has(input:checked) { border-color: #a9b9f1; color: #304ca9; background: var(--blue-soft); }
+    .dep-choice input { margin: 0; accent-color: var(--blue); }
+    .empty-dependencies { margin-left: 36px; color: #738093; font-size: .78rem; }
+    .plan-code-wrap { padding: 0 14px 15px; }
+    .code-caption { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; color: var(--muted); font-size: .76rem; }
+    .code-caption code { color: #334c9e; }
+    pre {
+      overflow-x: auto;
+      margin: 0;
+      padding: 14px;
+      border-radius: 9px;
+      color: #dce6fc;
+      background: #202b3c;
+      font: .78rem/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      tab-size: 2;
+    }
+
+    .graph-wrap { overflow-x: auto; padding: 4px 12px 0; }
+    .graph-svg { display: block; min-width: 100%; }
+    .graph-edge { fill: none; stroke: #a5b1c1; stroke-width: 2; }
+    .graph-edge.join-edge { stroke: #aeb8c8; stroke-dasharray: 4 4; opacity: .58; }
+    .graph-node rect { fill: #fff; stroke: #bdc9d9; stroke-width: 1.5; }
+    .graph-node .node-label { fill: var(--ink); font-size: 12px; font-weight: 720; }
+    .graph-node .node-detail { fill: var(--muted); font-size: 10px; }
+    .graph-node .node-status { fill: #69788c; font-size: 9px; font-weight: 700; text-transform: uppercase; }
+    .graph-node.is-running rect { fill: var(--orange-soft); stroke: #e3a34f; }
+    .graph-node.is-running .node-status { fill: var(--orange); }
+    .graph-node.is-done rect { fill: var(--teal-soft); stroke: #63b7aa; }
+    .graph-node.is-done .node-status { fill: var(--teal); }
+    .graph-node.is-join rect { fill: #f4f2fb; stroke: #bbb0de; }
+    .graph-legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 9px 18px 14px; color: var(--muted); font-size: .78rem; }
+    .legend-key { display: inline-flex; align-items: center; gap: 6px; }
+    .legend-dot { width: 9px; height: 9px; border-radius: 50%; background: #bac4d2; }
+    .legend-dot.running { background: #e3a34f; }
+    .legend-dot.done { background: var(--teal); }
+    .graph-caption { margin: 0; padding: 0 18px 15px; color: var(--muted); font-size: .8rem; }
+    .graph-text-alternative { margin: 0 18px 16px; padding: 10px 12px; border-radius: 8px; background: #f4f6fa; color: #46546a; font-size: .8rem; }
+
+    .run-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 20px 0 15px; }
+    .run-hint { color: var(--muted); font-size: .86rem; }
+    .schedule-status { min-height: 24px; color: #43546b; font-size: .88rem; font-weight: 620; }
+    .timing-panel { padding: 17px; border: 1px solid var(--line); border-radius: 13px; background: #f9fbff; }
+    .timing-panel h3 { margin-bottom: 4px; font-size: 1rem; }
+    .timing-note { margin-bottom: 14px; color: var(--muted); font-size: .8rem; }
+    .timing-comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+    .timing-stat { padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: white; }
+    .timing-stat.parallel { border-color: #a9d9d2; background: #f2fbf9; }
+    .timing-stat span { display: block; color: var(--muted); font-size: .76rem; }
+    .timing-stat strong { display: block; margin-top: 2px; font-size: 1.42rem; letter-spacing: -.03em; }
+    .timing-stat em { color: var(--muted); font-size: .76rem; font-style: normal; }
+    .timeline-heading { display: flex; justify-content: space-between; margin: 0 0 8px; color: var(--muted); font-size: .76rem; }
+    .timeline-scale { display: flex; justify-content: space-between; padding: 0 0 4px 104px; color: #778499; font: .67rem ui-monospace, monospace; }
+    .timeline-list { display: grid; gap: 7px; }
+    .timeline-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px; align-items: center; }
+    .timeline-label { overflow: hidden; color: #536177; font-size: .74rem; text-overflow: ellipsis; white-space: nowrap; }
+    .timeline-track { position: relative; height: 23px; border-radius: 5px; background: repeating-linear-gradient(90deg, #edf1f6 0, #edf1f6 calc(25% - 1px), #dce3ed calc(25% - 1px), #dce3ed 25%); }
+    .timeline-bar { position: absolute; top: 2px; bottom: 2px; display: flex; align-items: center; overflow: hidden; min-width: 28px; padding: 0 5px; border-radius: 4px; color: white; background: #5470d2; font-size: .66rem; font-weight: 700; white-space: nowrap; transition: filter .2s ease; }
+    .timeline-bar.is-running { background: #d1842b; }
+    .timeline-bar.is-done { background: var(--teal); }
+    .insight {
+      display: none;
+      margin-top: 13px;
+      padding: 11px 13px;
+      border-radius: 9px;
+      color: #6e4b21;
+      background: var(--orange-soft);
+      font-size: .83rem;
+    }
+    .insight.visible { display: block; }
+
+    .learning-path { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 25px 0 50px; }
+    .lesson {
+      padding: 19px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgb(255 255 255 / 80%);
+    }
+    .lesson-number { color: var(--teal); font-size: .77rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .lesson h3 { margin: 6px 0; font-size: 1.02rem; }
+    .lesson p { margin-bottom: 0; color: var(--muted); font-size: .87rem; }
+    .glossary { margin: 0 0 48px; }
+    .glossary details { margin: 9px 0; padding: 12px 15px; border: 1px solid var(--line); border-radius: 10px; background: white; }
+    .glossary summary { cursor: pointer; font-weight: 680; }
+    .glossary details p { margin: 8px 0 0; color: var(--muted); font-size: .9rem; }
+    .source-box { margin-bottom: 42px; padding: 22px; border-radius: 15px; color: #e9effb; background: #27344a; }
+    .source-box h2 { margin-bottom: 6px; font-size: 1.3rem; }
+    .source-box p { margin-bottom: 14px; color: #c0cce0; font-size: .9rem; }
+    .source-links { display: flex; flex-wrap: wrap; gap: 9px; }
+    .source-links a { padding: 6px 9px; border: 1px solid #53627a; border-radius: 7px; color: #e2e9f7; font: .78rem ui-monospace, monospace; text-decoration: none; }
+    .source-links a:hover { border-color: #aabef3; background: #34435b; }
+    footer { padding: 0 0 28px; color: var(--muted); font-size: .8rem; }
+
+    @media (max-width: 860px) {
+      .workspace { grid-template-columns: 1fr; }
+      .mental-model, .learning-path { gap: 9px; }
+      .playground { padding: 22px; }
+    }
+    @media (max-width: 600px) {
+      .page-shell { width: min(100% - 22px, 1160px); }
+      .topbar { padding: 15px 0; }
+      .hero { padding: 32px 0 22px; }
+      .mental-model, .learning-path { grid-template-columns: 1fr; margin-bottom: 34px; }
+      .model-card { min-height: auto; }
+      .model-card:not(:last-child)::after { top: auto; right: 18px; bottom: -15px; transform: rotate(90deg); }
+      .playground { padding: 15px; border-radius: 16px; }
+      .task-card { padding: 11px; }
+      .task-top { gap: 6px; }
+      .task-title { gap: 6px; }
+      .task-title strong { font-size: .82rem; }
+      .duration-control { min-width: 92px; }
+      .duration-control input { width: 92px; }
+      .task-description, .dependency-options, .empty-dependencies { margin-left: 0; }
+      .timing-comparison { gap: 7px; }
+      .timing-stat { padding: 9px; }
+      .timeline-row { grid-template-columns: 83px minmax(0, 1fr); gap: 6px; }
+      .timeline-scale { padding-left: 89px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="../README.md">LLMCompiler · beginner playground</a>
+      <a href="../README.md">Back to the project ↗</a>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="page-title">
+        <div class="eyebrow">A hands-on guide · no code, no API key</div>
+        <h1 id="page-title">Let an AI plan the work.<br>Let independent tasks run together.</h1>
+        <p class="hero-copy">LLMCompiler is a way to organize an AI assistant's tool calls. Change the task dependencies below and watch how the schedule changes—no computer-science background needed.</p>
+        <div class="hero-note">This playground is a small, made-up simulation—not a live AI or a benchmark.</div>
+      </section>
+
+      <section class="mental-model" aria-label="The three parts of LLMCompiler">
+        <article class="model-card">
+          <div class="model-label">1 · Planner</div>
+          <h2>Make a to-do list</h2>
+          <p>The LLM turns a question into small actions and notes which results later actions need.</p>
+        </article>
+        <article class="model-card">
+          <div class="model-label">2 · Task scheduler</div>
+          <h2>Start what is ready</h2>
+          <p>Actions that need no results can start together. Dependent actions wait their turn.</p>
+        </article>
+        <article class="model-card">
+          <div class="model-label">3 · Join</div>
+          <h2>Put the pieces together</h2>
+          <p>After the tools return their results, the LLM uses them to answer the original question.</p>
+        </article>
+      </section>
+
+      <section id="playground" class="playground" aria-labelledby="playground-title">
+        <div class="section-heading">
+          <div class="eyebrow">Your turn</div>
+          <h2 id="playground-title">Plan a weekend in Rome</h2>
+          <p>Imagine an assistant checking a forecast, finding places to walk, and looking up transport before suggesting what to pack.</p>
+        </div>
+
+        <aside class="practice-note">
+          <span class="bulb" aria-hidden="true">✦</span>
+          <div>
+            <strong>First, make a prediction.</strong>
+            <p>Which actions could start at the same time? Which one needs earlier results? Try the example, then change a link.</p>
+          </div>
+        </aside>
+
+        <div class="preset-bar" aria-label="Load an example plan">
+          <button class="button" id="reset-example" type="button">Reset good example</button>
+          <button class="button" id="make-sequential" type="button">Make everything wait in line</button>
+          <button class="button" id="break-links" type="button">Remove the packing task's links</button>
+        </div>
+
+        <div class="workspace">
+          <section class="panel" aria-labelledby="editor-title">
+            <div class="panel-heading">
+              <h3 id="editor-title">A. Choose what each task waits for</h3>
+              <p>Tick a prior task if this one needs its result. The “ticks” are imaginary time units.</p>
+            </div>
+            <div id="task-editor" class="task-editor"></div>
+            <div class="plan-code-wrap">
+              <div class="code-caption"><span>Schematic plan notation · packing tool is made up</span><code>$1 = result from task 1</code></div>
+              <pre id="plan-code" aria-label="The current plan written in compact notation"></pre>
+            </div>
+          </section>
+
+          <section class="panel" aria-labelledby="graph-title">
+            <div class="panel-heading">
+              <h3 id="graph-title">B. See the dependency map</h3>
+              <p>Arrows mean “wait for this result.” Tasks without incoming arrows are free to start.</p>
+            </div>
+            <div class="graph-wrap">
+              <svg id="task-graph" class="graph-svg" role="img" aria-label="Task dependency graph"></svg>
+            </div>
+            <div class="graph-legend" aria-label="Task status legend">
+              <span class="legend-key"><span class="legend-dot"></span> Not started</span>
+              <span class="legend-key"><span class="legend-dot running"></span> Running</span>
+              <span class="legend-key"><span class="legend-dot done"></span> Complete</span>
+            </div>
+            <p class="graph-caption">The Join waits for every task result. A missing arrow can make a task start before the information it needs is ready.</p>
+            <p id="graph-text-alternative" class="graph-text-alternative" aria-live="polite"></p>
+          </section>
+        </div>
+
+        <div class="run-row">
+          <button class="button primary" id="run-schedule" type="button">▶ Run the toy schedule</button>
+          <span class="run-hint">Watch tasks become ready, run, and finish.</span>
+        </div>
+        <div id="schedule-status" class="schedule-status" role="status" aria-live="polite">Change a dependency, then run the schedule.</div>
+
+        <section class="timing-panel" aria-labelledby="timing-title">
+          <h3 id="timing-title">C. Compare the waiting time</h3>
+          <p class="timing-note">Toy time counts tool work only: it leaves out the LLM's planning, answer-writing, and real-world delays. It illustrates the idea, not a measured result.</p>
+          <div class="timing-comparison">
+            <div class="timing-stat">
+              <span>One task at a time</span>
+              <strong id="sequential-time">—</strong>
+              <em>sum of all task durations</em>
+            </div>
+            <div class="timing-stat parallel">
+              <span>Respecting dependencies</span>
+              <strong id="parallel-time">—</strong>
+              <em>longest chain of waits</em>
+            </div>
+          </div>
+          <div class="timeline-heading">
+            <strong>Parallel schedule</strong>
+            <span>Bars that overlap run together</span>
+          </div>
+          <div id="timeline-scale" class="timeline-scale" aria-hidden="true"></div>
+          <div id="timeline-list" class="timeline-list" aria-label="Illustrative parallel execution timeline"></div>
+          <div id="plan-insight" class="insight" role="status" aria-live="polite"></div>
+        </section>
+      </section>
+
+      <section class="learning-path" aria-label="What to take away">
+        <article class="lesson">
+          <div class="lesson-number">Takeaway 01</div>
+          <h3>A plan is a graph, not just a list</h3>
+          <p>Task numbers make results addressable. A reference such as <code>$1</code> says that a task uses the result from task 1.</p>
+        </article>
+        <article class="lesson">
+          <div class="lesson-number">Takeaway 02</div>
+          <h3>Parallel does not mean “everything at once”</h3>
+          <p>Independent work can overlap. Work that needs an unfinished result must wait; the longest dependency chain limits the speed-up.</p>
+        </article>
+        <article class="lesson">
+          <div class="lesson-number">Takeaway 03</div>
+          <h3>A fast plan can still be a bad plan</h3>
+          <p>If a needed dependency is missing, the scheduler cannot know to wait. Correctness matters as much as speed.</p>
+        </article>
+      </section>
+
+      <section class="glossary" aria-labelledby="glossary-title">
+        <div class="section-heading">
+          <div class="eyebrow">A few useful words</div>
+          <h2 id="glossary-title">Tiny glossary</h2>
+          <p>Open a term when you need it. You do not have to memorize these.</p>
+        </div>
+        <details>
+          <summary>Tool / action</summary>
+          <p>A capability the assistant can call, such as searching a source or using a calculator. A tool's result is called an observation in this project.</p>
+        </details>
+        <details>
+          <summary>Task ID and <code>$1</code></summary>
+          <p>Each planned action gets a number. In this repository, a reference like <code>$1</code> in a later action's arguments is how the parser spots a dependency on action 1.</p>
+        </details>
+        <details>
+          <summary>Dependency</summary>
+          <p>A result that must exist before a task can run. It is like needing the ingredients before following a recipe step.</p>
+        </details>
+        <details>
+          <summary>Critical path</summary>
+          <p>The slowest chain of dependent tasks. Even if other tasks run alongside it, this chain sets the earliest time all work can finish.</p>
+        </details>
+        <details>
+          <summary>Join</summary>
+          <p>The step that gathers finished task results so the LLM can answer the user. Here it is drawn as a final node; it is not another search tool.</p>
+        </details>
+        <details>
+          <summary>Latency and cost</summary>
+          <p>Parallel calls can reduce elapsed waiting time, but they do not automatically make every tool call free or reduce total work. Actual latency and cost depend on the model, tools, and workload.</p>
+        </details>
+      </section>
+
+      <section class="source-box" aria-labelledby="source-title">
+        <h2 id="source-title">Want to connect this to the actual code?</h2>
+        <p>These are the implementation pieces behind the simplified picture. You can just read the filenames as signposts—there is no coding exercise here.</p>
+        <div class="source-links">
+          <a href="../src/llm_compiler/planner.py">planner.py · asks for a plan</a>
+          <a href="../src/llm_compiler/output_parser.py">output_parser.py · reads task IDs and $references</a>
+          <a href="../src/llm_compiler/task_fetching_unit.py">task_fetching_unit.py · waits and schedules</a>
+          <a href="../src/llm_compiler/llm_compiler.py">llm_compiler.py · gathers results and joins</a>
+        </div>
+      </section>
+    </main>
+
+    <footer>Built from this repository's LLMCompiler concepts. The sample trip and timings are illustrative, not factual travel advice or benchmark measurements.</footer>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const TASKS = [
+        { id: 1, shortName: "Weather", action: "search", detail: "Check the forecast for Rome", query: "weather forecast in Rome", duration: 3, dependencies: [] },
+        { id: 2, shortName: "Walks", action: "search", detail: "Find places to walk in Rome", query: "walking-friendly places in Rome", duration: 2, dependencies: [] },
+        { id: 3, shortName: "Transport", action: "search", detail: "Look up getting around Rome", query: "public transport options in Rome", duration: 4, dependencies: [] },
+        { id: 4, shortName: "Packing idea", action: "suggest_packing", detail: "Suggest what to pack", query: "for a weekend in Rome", duration: 3, dependencies: [1, 2] }
+      ];
+      const RUN_TICK_MS = 430;
+      const DEFAULT_DURATIONS = TASKS.map(task => task.duration);
+      const DEFAULT_DEPENDENCIES = TASKS.map(task => [...task.dependencies]);
+      const taskEditor = document.querySelector("#task-editor");
+      const graph = document.querySelector("#task-graph");
+      const code = document.querySelector("#plan-code");
+      const scale = document.querySelector("#timeline-scale");
+      const timeline = document.querySelector("#timeline-list");
+      const statusText = document.querySelector("#schedule-status");
+      const insight = document.querySelector("#plan-insight");
+      const runButton = document.querySelector("#run-schedule");
+      const sequentialTime = document.querySelector("#sequential-time");
+      const parallelTime = document.querySelector("#parallel-time");
+      let busy = false;
+      let states = new Map(TASKS.map(task => [task.id, "idle"]));
+
+      const cloneDependencies = () => DEFAULT_DEPENDENCIES.map(dependencies => [...dependencies]);
+
+      function renderEditor() {
+        taskEditor.replaceChildren();
+        TASKS.forEach((task, index) => {
+          const card = document.createElement("article");
+          card.className = "task-card";
+          const top = document.createElement("div");
+          top.className = "task-top";
+          const title = document.createElement("div");
+          title.className = "task-title";
+          title.innerHTML = `<span class="task-id">#${task.id}</span><strong>${task.detail}</strong>`;
+          const duration = document.createElement("label");
+          duration.className = "duration-control";
+          duration.innerHTML = `Toy duration: <output for="duration-${task.id}">${task.duration} ticks</output>`;
+          const slider = document.createElement("input");
+          slider.type = "range";
+          slider.id = `duration-${task.id}`;
+          slider.min = "1";
+          slider.max = "8";
+          slider.step = "1";
+          slider.value = String(task.duration);
+          slider.setAttribute("aria-label", `Toy duration for task ${task.id}, ${task.shortName}`);
+          slider.addEventListener("input", () => {
+            task.duration = Number(slider.value);
+            duration.querySelector("output").textContent = `${task.duration} ticks`;
+            refresh();
+          });
+          duration.append(slider);
+          top.append(title, duration);
+          card.append(top);
+
+          if (index === 0) {
+            const none = document.createElement("div");
+            none.className = "empty-dependencies";
+            none.textContent = "No earlier results needed.";
+            card.append(none);
+          } else {
+            const options = document.createElement("fieldset");
+            options.className = "dependency-options";
+            const legend = document.createElement("legend");
+            legend.textContent = "Wait for the result from:";
+            options.append(legend);
+            TASKS.slice(0, index).forEach(priorTask => {
+              const label = document.createElement("label");
+              label.className = "dep-choice";
+              const checkbox = document.createElement("input");
+              checkbox.type = "checkbox";
+              checkbox.checked = task.dependencies.includes(priorTask.id);
+              checkbox.dataset.taskId = String(task.id);
+              checkbox.dataset.dependencyId = String(priorTask.id);
+              checkbox.setAttribute("aria-label", `Task ${task.id} waits for task ${priorTask.id}, ${priorTask.shortName}`);
+              checkbox.addEventListener("change", () => {
+                task.dependencies = Array.from(
+                  options.querySelectorAll("input:checked"),
+                  input => Number(input.dataset.dependencyId)
+                );
+                task.dependencies.sort((a, b) => a - b);
+                refresh();
+              });
+              label.append(checkbox, document.createTextNode(`#${priorTask.id} ${priorTask.shortName}`));
+              options.append(label);
+            });
+            card.append(options);
+          }
+          taskEditor.append(card);
+        });
+      }
+
+      function taskInputs(task) {
+        return task.dependencies.map(id => `$${id}`).join(", ");
+      }
+
+      function planLines() {
+        const lines = TASKS.map(task => {
+          const extraInputs = taskInputs(task);
+          const query = extraInputs ? `${task.query} (using ${extraInputs})` : task.query;
+          return `${task.id}. ${task.action}(${JSON.stringify(query)})`;
+        });
+        lines.push(`${TASKS.length + 1}. join()  ← after all results`);
+        return lines;
+      }
+
+      function schedule() {
+        const ends = new Map();
+        const starts = new Map();
+        let sequentialEnd = 0;
+        TASKS.forEach(task => {
+          const start = task.dependencies.length
+            ? Math.max(...task.dependencies.map(id => ends.get(id)))
+            : 0;
+          starts.set(task.id, start);
+          ends.set(task.id, start + task.duration);
+          sequentialEnd += task.duration;
+        });
+        const parallelEnd = Math.max(...ends.values());
+        return { starts, ends, sequentialEnd, parallelEnd };
+      }
+
+      function renderGraph() {
+        const layers = new Map();
+        TASKS.forEach(task => {
+          const layer = task.dependencies.length
+            ? Math.max(...task.dependencies.map(id => layers.get(id))) + 1
+            : 0;
+          layers.set(task.id, layer);
+        });
+        const joinLayer = Math.max(...layers.values()) + 1;
+        const groups = new Map();
+        TASKS.forEach(task => {
+          const layer = layers.get(task.id);
+          if (!groups.has(layer)) groups.set(layer, []);
+          groups.get(layer).push(task.id);
+        });
+        if (!groups.has(joinLayer)) groups.set(joinLayer, []);
+        groups.get(joinLayer).push("join");
+
+        const positions = new Map();
+        groups.forEach((ids, layer) => {
+          ids.forEach((id, row) => positions.set(id, { x: 22 + layer * 136, y: 26 + row * 84 }));
+        });
+        const maxRows = Math.max(...Array.from(groups.values(), ids => ids.length));
+        const width = 22 + joinLayer * 136 + 128 + 8;
+        const joinBusY = 26 + maxRows * 84 + 22;
+        const height = Math.max(165, joinBusY + 18);
+        graph.setAttribute("viewBox", `0 0 ${width} ${height}`);
+        graph.setAttribute("width", String(width));
+        graph.setAttribute("height", String(height));
+        graph.setAttribute("aria-label", `Dependency graph: ${TASKS.map(task => `task ${task.id} waits for ${task.dependencies.length ? task.dependencies.map(id => `task ${id}`).join(" and ") : "no earlier tasks"}`).join("; ")}; Join waits for all four tasks.`);
+
+        const edges = [];
+        TASKS.forEach(task => {
+          task.dependencies.forEach(id => {
+            const from = positions.get(id);
+            const to = positions.get(task.id);
+            edges.push(`<path class="graph-edge" d="M ${from.x + 128} ${from.y + 33} C ${from.x + 142} ${from.y + 33}, ${to.x - 14} ${to.y + 33}, ${to.x} ${to.y + 33}" marker-end="url(#arrow)"/>`);
+          });
+          const from = positions.get(task.id);
+          const joinBusX = positions.get("join").x + 64;
+          edges.push(`<path class="graph-edge join-edge" d="M ${from.x + 64} ${from.y + 66} V ${joinBusY} H ${joinBusX}"/>`);
+        });
+        const joinPos = positions.get("join");
+        edges.push(`<path class="graph-edge join-edge" d="M ${joinPos.x + 64} ${joinBusY} V ${joinPos.y + 66}" marker-end="url(#arrow)"/>`);
+
+        const nodes = TASKS.map(task => {
+          const pos = positions.get(task.id);
+          const state = states.get(task.id);
+          const className = state === "idle" ? "" : ` is-${state}`;
+          const details = task.dependencies.length
+            ? `waits for ${task.dependencies.map(id => `#${id}`).join(", ")}`
+            : "ready immediately";
+          return `<g class="graph-node${className}" transform="translate(${pos.x}, ${pos.y})">
+            <rect width="128" height="66" rx="10"/>
+            <text class="node-label" x="10" y="19">#${task.id} · ${task.shortName}</text>
+            <text class="node-detail" x="10" y="36">${details}</text>
+            <text class="node-status" x="10" y="53">${state === "idle" ? "NOT STARTED" : state.toUpperCase()}</text>
+          </g>`;
+        });
+        nodes.push(`<g class="graph-node is-join" transform="translate(${joinPos.x}, ${joinPos.y})">
+          <rect width="128" height="66" rx="10"/>
+          <text class="node-label" x="10" y="24">JOIN · gather</text>
+          <text class="node-detail" x="10" y="43">waits for all 4</text>
+        </g>`);
+        graph.innerHTML = `<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#a5b1c1"/></marker></defs>${edges.join("")}${nodes.join("")}`;
+
+        const descriptions = TASKS.map(task => {
+          const waits = task.dependencies.length ? `waits for task${task.dependencies.length > 1 ? "s" : ""} ${task.dependencies.join(", ")}` : "can start immediately";
+          return `Task ${task.id} (${task.shortName}) ${waits}`;
+        });
+        document.querySelector("#graph-text-alternative").textContent =
+          `${descriptions.join(". ")}. Join waits for every task.`;
+      }
+
+      function renderTimeline(times) {
+        const total = Math.max(1, times.parallelEnd);
+        scale.replaceChildren();
+        const ticks = Math.min(8, total);
+        for (let i = 0; i <= ticks; i += 1) {
+          const mark = document.createElement("span");
+          mark.textContent = String(Math.round(total * i / ticks));
+          scale.append(mark);
+        }
+        timeline.replaceChildren();
+        TASKS.forEach(task => {
+          const row = document.createElement("div");
+          row.className = "timeline-row";
+          const label = document.createElement("span");
+          label.className = "timeline-label";
+          label.textContent = `#${task.id} ${task.shortName}`;
+          const track = document.createElement("div");
+          track.className = "timeline-track";
+          track.setAttribute("aria-hidden", "true");
+          const bar = document.createElement("div");
+          bar.className = "timeline-bar";
+          bar.dataset.taskId = String(task.id);
+          bar.style.left = `${times.starts.get(task.id) / total * 100}%`;
+          bar.style.width = `${task.duration / total * 100}%`;
+          bar.textContent = `${times.starts.get(task.id)}–${times.ends.get(task.id)}`;
+          track.append(bar);
+          row.append(label, track);
+          timeline.append(row);
+        });
+      }
+
+      function refresh() {
+        states = new Map(TASKS.map(task => [task.id, "idle"]));
+        code.textContent = planLines().join("\n");
+        const times = schedule();
+        sequentialTime.textContent = `${times.sequentialEnd} ticks`;
+        parallelTime.textContent = `${times.parallelEnd} ticks`;
+        renderGraph();
+        renderTimeline(times);
+        insight.classList.remove("visible");
+        const packingTask = TASKS[3];
+        if (!packingTask.dependencies.includes(1) || !packingTask.dependencies.includes(2)) {
+          insight.textContent = packingTask.dependencies.length
+            ? "Notice: the packing suggestion is no longer waiting for both the forecast (#1) and walking plan (#2). It may start without one of the results it needs. The scheduler follows the dependencies it is given; it cannot guess the missing link."
+            : "Notice: the packing suggestion has no incoming links, so it can start immediately—but it will not have the forecast (#1) or walking plan (#2). The scheduler follows the dependencies it is given; it cannot guess the missing link.";
+          insight.classList.add("visible");
+        }
+        if (!busy) statusText.textContent = "Change a dependency, then run the schedule.";
+      }
+
+      function setBusy(value) {
+        busy = value;
+        document.querySelectorAll("#task-editor input, #reset-example, #make-sequential, #break-links")
+          .forEach(control => { control.disabled = value; });
+        runButton.disabled = value;
+        runButton.textContent = value ? "Running…" : "▶ Run the toy schedule";
+      }
+
+      function wait(ms) {
+        return new Promise(resolve => window.setTimeout(resolve, ms));
+      }
+
+      async function runSchedule() {
+        if (busy) return;
+        setBusy(true);
+        states = new Map(TASKS.map(task => [task.id, "idle"]));
+        renderGraph();
+        const times = schedule();
+        statusText.textContent = "Ready tasks are starting together…";
+        for (let tick = 0; tick < times.parallelEnd; tick += 1) {
+          TASKS.forEach(task => {
+            const start = times.starts.get(task.id);
+            const end = times.ends.get(task.id);
+            if (start === tick) states.set(task.id, "running");
+            if (end === tick) states.set(task.id, "done");
+          });
+          const active = TASKS.filter(task => states.get(task.id) === "running").map(task => task.shortName);
+          statusText.textContent = active.length
+            ? `Tick ${tick}: ${active.join(", ")} ${active.length === 1 ? "is" : "are"} running.`
+            : `Tick ${tick}: waiting for dependencies.`;
+          renderGraph();
+          timeline.querySelectorAll(".timeline-bar").forEach(bar => {
+            const taskId = Number(bar.dataset.taskId);
+            bar.classList.toggle("is-running", states.get(taskId) === "running");
+            bar.classList.toggle("is-done", states.get(taskId) === "done");
+          });
+          await wait(RUN_TICK_MS);
+        }
+        TASKS.forEach(task => states.set(task.id, "done"));
+        renderGraph();
+        timeline.querySelectorAll(".timeline-bar").forEach(bar => bar.classList.add("is-done"));
+        statusText.textContent = `All four tool tasks finished in ${times.parallelEnd} toy ticks. Join can now combine their results.`;
+        setBusy(false);
+      }
+
+      function resetDependencies(dependencies) {
+        TASKS.forEach((task, index) => {
+          task.dependencies = [...dependencies[index]];
+        });
+        renderEditor();
+        refresh();
+      }
+
+      document.querySelector("#reset-example").addEventListener("click", () => {
+        TASKS.forEach((task, index) => { task.duration = DEFAULT_DURATIONS[index]; });
+        resetDependencies(cloneDependencies());
+      });
+      document.querySelector("#make-sequential").addEventListener("click", () => {
+        resetDependencies(TASKS.map((task, index) => index === 0 ? [] : [TASKS[index - 1].id]));
+      });
+      document.querySelector("#break-links").addEventListener("click", () => {
+        const dependencies = cloneDependencies();
+        dependencies[3] = [];
+        resetDependencies(dependencies);
+      });
+      runButton.addEventListener("click", runSchedule);
+
+      renderEditor();
+      refresh();
+    })();
+  </script>
+</body>
+</html>

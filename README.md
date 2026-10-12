@@ -28,6 +28,13 @@ For more details, please check out our [paper](https://arxiv.org/abs/2312.04511)
 * 🦙 [12/29] LLMCompiler is available on [LlamaIndex](https://llamahub.ai/l/llama_packs-agents-llm_compiler?from=llama_packs)
 
 ---
+## Learn the Fundamentals
+
+New to LLMCompiler? Try the [interactive beginner playground](playground/index.html). It explains the planner, task dependencies, parallel execution, and join step with a visual, editable toy example. No API key, Python environment, or additional packages are needed: open `playground/index.html` in a web browser.
+
+The playground simulates task scheduling to teach the ideas; it does not call a live model or report benchmark measurements.
+
+---
 ## Installation
 
 1. Create a conda environment and install the dependencies
@@ -107,4 +114,3 @@ LLMCompiler has been developed as part of the following paper. We appreciate it 
   year={2023}
 }
 ```
-
